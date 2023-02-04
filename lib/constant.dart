@@ -1,0 +1,1 @@
+enum ModeOfTransportation { DRIVING, WALKING }

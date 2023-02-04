@@ -1,4 +1,4 @@
-# travely
+# Travely
 
 A new Flutter project.
 

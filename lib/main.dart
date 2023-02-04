@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:travely/pages/pc/mainPage.dart';
 import 'package:travely/style.dart';
 
 void main() {
