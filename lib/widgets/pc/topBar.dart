@@ -43,9 +43,9 @@ class _TopBarState extends State<TopBar> {
             onPressed: () {},
             child: Row(
               children: const [
-                Icon(Icons.settings, size: 20),
+                Icon(Icons.delete, size: 20),
                 SizedBox(width: 10),
-                Text("Setting"),
+                Text("Delete"),
               ],
             ),
             style: ButtonStyle(

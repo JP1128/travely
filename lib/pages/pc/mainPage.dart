@@ -30,7 +30,7 @@ class _MainPageState extends State<MainPage> {
                 SizedBox(
                   width: 15.w,
                   child: Image.asset(
-                    "assets/logo.png",
+                    "logo.png",
                     height: 60,
                   ),
                 ),

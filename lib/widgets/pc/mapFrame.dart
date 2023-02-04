@@ -39,7 +39,7 @@ class _MapFrameState extends State<MapFrame> {
       child: GoogleMap(
         onMapCreated: (controller) {
           _gmController = controller;
-          _gmController.setMapStyle(_mapStyle);
+          // _gmController.setMapStyle(_mapStyle);
         },
         initialCameraPosition: _kGooglePlex,
         myLocationEnabled: true,

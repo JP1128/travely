@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:travely/pages/pc/mainPage.dart';
 import 'package:travely/style.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+void main() async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -17,8 +24,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Travely - PC',
           theme: theme,
-          home: Material(
-            child: const MainPage(),
+          home: const Material(
+            child: MainPage(),
           ),
           debugShowCheckedModeBanner: false,
         );

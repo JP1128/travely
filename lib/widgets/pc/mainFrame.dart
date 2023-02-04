@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/foundation/key.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:travely/style.dart';
 import 'package:travely/widgets/pc/leftPanel.dart';
 import 'package:travely/widgets/pc/mapFrame.dart';
@@ -28,8 +25,8 @@ class _MainFrameState extends State<MainFrame> {
           Expanded(
             child: Stack(
               children: [
-                MapFrame(),
-                Positioned(
+                const MapFrame(),
+                const Positioned(
                   right: 15,
                   top: 15,
                   child: RightPanel(),
