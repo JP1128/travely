@@ -37,3 +37,10 @@ We want to create an online community where users can share their date/hangout/t
 If the application goes online, we could see how others react to certain trips to give you personalized suggestions on what events are a good fit for you to help you make an awesome plan for your special one!
 
 # Preview
+
+<p align="center">
+<img src="assets/demo1.png" height="200">
+<img src="assets/demo2.PNG" height="200">
+<img src="assets/demo3.PNG" height="200">
+<img src="assets/phone_demo1.png" height="200">
+</p>
