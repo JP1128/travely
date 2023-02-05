@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:travely/style.dart';
-import 'package:travely/widgets/pc/leftPanel.dart';
+import 'package:travely/widgets/pc/day_view_panel.dart';
 import 'package:travely/widgets/pc/mapFrame.dart';
 import 'package:travely/widgets/pc/rightPanel.dart';
 
@@ -20,7 +21,12 @@ class _MainFrameState extends State<MainFrame> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LeftPanel(),
+          Container(
+            width: 15.w,
+            child: DayViewPanel(
+              tripKey: "",
+            ),
+          ),
           const SizedBox(width: 20),
           Expanded(
             child: Stack(

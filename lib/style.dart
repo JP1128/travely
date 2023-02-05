@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 var primaryColor = 0xFF26A9DD;
 var strokeColor = 0xFFD2D2D2;
+var grayColor = 0xFFEDEDED;
 
 Decoration boxDecoration = BoxDecoration(
   color: Colors.white,
@@ -10,21 +11,36 @@ Decoration boxDecoration = BoxDecoration(
   borderRadius: BorderRadius.circular(10),
 );
 
+ButtonStyle eventWidgetButtonStyle = OutlinedButton.styleFrom(
+  side: BorderSide(color: Color(strokeColor)),
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(10),
+  ),
+);
+
+ButtonStyle trafficWidgetButtonStyle = eventWidgetButtonStyle.merge(
+  OutlinedButton.styleFrom(
+    backgroundColor: Color(grayColor),
+  ),
+);
+
 ThemeData theme = ThemeData(
   useMaterial3: true,
   primaryColor: Color(primaryColor),
+  colorScheme: ColorScheme.fromSeed(seedColor: Color(primaryColor)),
+  canvasColor: Colors.white,
   textTheme: TextTheme(
     titleLarge: GoogleFonts.roboto(
       fontWeight: FontWeight.w700,
       fontSize: 22,
     ),
     titleMedium: GoogleFonts.roboto(
-      fontWeight: FontWeight.w500,
-      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      fontSize: 15,
     ),
     bodyMedium: GoogleFonts.roboto(
-      fontWeight: FontWeight.w500,
-      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      fontSize: 15,
     ),
   ),
   inputDecorationTheme: const InputDecorationTheme(

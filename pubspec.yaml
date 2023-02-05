@@ -43,6 +43,9 @@ dependencies:
   
   responsive_sizer: ^3.1.1
   firebase_core: ^2.4.1
+  firebase_database: ^10.0.9
+  shared_preferences: ^2.0.17
+  uuid: ^3.0.7
 
 dev_dependencies:
   flutter_test:
