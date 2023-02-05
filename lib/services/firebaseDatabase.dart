@@ -18,6 +18,10 @@ void updateEvent(EventModel event) async {
   await eventRef.set(event.toMap());
 }
 
+void deleteEvent(String eventKey) async {
+  await eventsDatabase.child(eventKey).remove();
+}
+
 Stream<List<EventModel>?> streamEvents(String tripKey) {
   var events = eventsDatabase.orderByChild("tripKey").equalTo(tripKey);
 
@@ -25,13 +29,11 @@ Stream<List<EventModel>?> streamEvents(String tripKey) {
   return stream.map((event) {
     var snapshot = event.snapshot;
 
-    print(tripKey);
-    if (snapshot.exists) {
-      print("wae");
+    if (snapshot.exists && snapshot.children.isNotEmpty) {
       return snapshot.children.map((data) => EventModel.fromMap(data.key!, data.value!)).toList();
     }
 
-    return null;
+    return List.empty();
   });
 }
 

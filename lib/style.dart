@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 var primaryColor = 0xFF26A9DD;
 var strokeColor = 0xFFD2D2D2;
 var grayColor = 0xFFEDEDED;
+var errorColor = 0xFFFB6357;
 
 Decoration boxDecoration = BoxDecoration(
   color: Colors.white,

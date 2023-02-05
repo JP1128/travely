@@ -9,6 +9,7 @@ import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:travely/constant.dart';
 import 'package:travely/models/string_wrapper.dart';
+import 'package:travely/models/wrapper.dart';
 import 'package:travely/style.dart';
 
 class TextEditor extends StatefulWidget {
@@ -63,7 +64,7 @@ class GooglePlacesTextField extends StatefulWidget {
   });
 
   final TextEditingController textController;
-  final Completer<String> placeId;
+  final Wrapper<String?> placeId;
 
   @override
   State<GooglePlacesTextField> createState() => _GooglePlacesTextFieldState();
@@ -109,7 +110,7 @@ class _GooglePlacesTextFieldState extends State<GooglePlacesTextField> {
                     return TextButton(
                       onPressed: () {
                         widget.textController.text = predictions![index].fullText;
-                        widget.placeId.complete(predictions![index].placeId);
+                        widget.placeId.value = predictions![index].placeId;
                         Navigator.of(context).pop();
                       },
                       child: Text(

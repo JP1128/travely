@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gm;
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:travely/constant.dart';
 import 'package:travely/models/eventModel.dart';
 import 'package:travely/models/time.dart';
+import 'package:travely/models/wrapper.dart';
 import 'package:travely/services/firebaseDatabase.dart';
 import 'package:travely/style.dart';
 import 'package:travely/widgets/pc/text_editor.dart';
@@ -27,11 +30,13 @@ class MainFrame extends StatefulWidget {
 
 class _MainFrameState extends State<MainFrame> {
   final Completer<gm.GoogleMapController> _gmController = Completer();
-  final Completer<String> _placeId = Completer();
+  final Wrapper<String?> _placeId = Wrapper();
 
   final TextEditingController _eventTitle = TextEditingController();
   final TextEditingController _eventAddress = TextEditingController();
   final TextEditingController _eventDescription = TextEditingController();
+
+  EventModel? currentEvent;
 
   late String _mapStyle;
 
@@ -39,6 +44,21 @@ class _MainFrameState extends State<MainFrame> {
   TimeOfDay end = TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
 
   int currentDay = 1;
+
+  void resetCurrentEvent() {
+    _eventTitle.text = currentEvent!.eventName ?? "New event";
+    _eventAddress.text = currentEvent!.address ?? "address";
+    _eventDescription.text = currentEvent!.description ?? "";
+    start = (currentEvent!.startTime != null)
+        ? //
+        TimeOfDay(hour: currentEvent!.startTime!.hour, minute: currentEvent!.startTime!.minutes)
+        : TimeOfDay.now();
+    end = (currentEvent!.endTime != null)
+        ? //
+        TimeOfDay(hour: currentEvent!.endTime!.hour, minute: currentEvent!.endTime!.minutes)
+        : TimeOfDay(hour: start.hour, minute: start.minute);
+    _placeId.value = null;
+  }
 
   @override
   void initState() {
@@ -54,19 +74,22 @@ class _MainFrameState extends State<MainFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<List<EventModel>?>(
+        initialData: [],
         stream: streamEvents(widget.tripKey),
         builder: (context, snapshot) {
-          var eventLists = snapshot.data;
+          var eventLists = snapshot.data!;
 
-          if (snapshot.data == null) {
-            return Center(child: CircularProgressIndicator());
+          if (eventLists.isNotEmpty) {
+            eventLists.removeWhere((event) {
+              return event.startTime!.toMinutes().minutes > Minutes.fromDay(currentDay) && //
+                  event.endTime!.toMinutes().minutes < Minutes.fromDay(currentDay - 1);
+            });
+
+            eventLists.sort((a, b) {
+              return a.startTime!.toMinutes().minutes - b.startTime!.toMinutes().minutes;
+            });
           }
-
-          eventLists!.removeWhere((event) {
-            return event.startTime!.toMinutes().minutes > Minutes.fromDay(currentDay) && //
-                event.endTime!.toMinutes().minutes < Minutes.fromDay(currentDay - 1);
-          });
 
           return Container(
             padding: const EdgeInsets.all(10),
@@ -93,20 +116,126 @@ class _MainFrameState extends State<MainFrame> {
                             const SizedBox(height: 10),
                             DayConfigurationRow(),
                             const SizedBox(height: 20),
-                            Text(
-                              "Traffic data for March, 16",
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            const SizedBox(height: 10),
+                            // Text(
+                            //   "Traffic data for March, 16",
+                            //   textAlign: TextAlign.center,
+                            //   style: Theme.of(context).textTheme.bodyLarge,
+                            // ),
+                            // const SizedBox(height: 10),
                             OutlinedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                setState(() {
+                                  currentEvent = EventModel(
+                                    tripKey: widget.tripKey,
+                                  );
+                                  resetCurrentEvent();
+                                });
+                              },
                               style: eventWidgetButtonStyle,
                               child: Icon(Icons.add),
                             ),
                             const SizedBox(height: 10),
                             Expanded(
-                              child: EventViewer(listOfEvents: eventLists),
+                              child: Builder(builder: (context) {
+                                return ListView.separated(
+                                  itemBuilder: ((context, index) {
+                                    var event = eventLists[index];
+                                    return OutlinedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          currentEvent = event;
+                                          resetCurrentEvent();
+                                        });
+                                      },
+                                      style: eventWidgetButtonStyle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Row(
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  event.eventName!,
+                                                  style: Theme.of(context).textTheme.titleMedium,
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      event.startTime!.toTimeString(),
+                                                      style: Theme.of(context).textTheme.titleSmall,
+                                                    ),
+                                                    Text(
+                                                      " - ",
+                                                      style: Theme.of(context).textTheme.titleSmall,
+                                                    ),
+                                                    Text(
+                                                      event.endTime!.toTimeString(),
+                                                      style: Theme.of(context).textTheme.titleSmall,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  separatorBuilder: ((context, index) {
+                                    // return Placeholder();
+
+                                    var prev = eventLists[index];
+                                    var next = eventLists[index + 1];
+
+                                    final directionService = gd.DirectionsService();
+                                    final request = gd.DirectionsRequest(
+                                      origin: "place_id:" + prev.placeId!,
+                                      destination: "place_id:" + next.placeId!,
+                                      travelMode: gd.TravelMode.driving,
+                                    );
+
+                                    Completer<gd.DirectionsResult> resultCompleter = Completer();
+                                    Completer<gd.DirectionsStatus> statusCompleter = Completer();
+                                    directionService.route(request, (result, status) {
+                                      resultCompleter.complete(result);
+                                      statusCompleter.complete(status);
+                                    });
+
+                                    return FutureBuilder(
+                                        future: resultCompleter.future,
+                                        builder: (context, snapshot) {
+                                          if (snapshot.hasData) {
+                                            var result = snapshot.data;
+
+                                            print(result!.routes!.first);
+
+                                            var routes = result!.routes;
+                                            var bestRoute = routes!.first;
+                                            var bestLeg = bestRoute.legs!.first;
+
+                                            var distance = bestLeg.distance!.value!.toDouble() / 1609;
+
+                                            print(distance);
+
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                vertical: 10,
+                                              ),
+                                              child: TrafficItem(
+                                                distance: distance,
+                                                duration: Minutes(bestLeg.duration!.value!.toInt() ~/ 60),
+                                                summary: bestRoute.summary!,
+                                              ),
+                                            );
+                                          }
+
+                                          return Center(child: CircularProgressIndicator());
+                                        });
+                                  }),
+                                  itemCount: eventLists.length,
+                                );
+                              }),
                             ),
                           ],
                         );
@@ -125,202 +254,226 @@ class _MainFrameState extends State<MainFrame> {
                       Container(
                         decoration: boxDecoration,
                         clipBehavior: Clip.hardEdge,
-                        child: gm.GoogleMap(
-                          onMapCreated: (controller) async {
-                            _gmController.complete(controller);
-                            (await _gmController.future).setMapStyle(_mapStyle);
+                        child: FutureBuilder(
+                          future: Future<gm.CameraPosition>(() {
+                            if (currentEvent != null) {
+                              places.fetchPlace(currentEvent!.placeId!, fields: [PlaceField.Location]).then((value) {
+                                var latlng = value.place!.latLng;
+                                return gm.CameraPosition(target: gm.LatLng(latlng!.lat, latlng!.lng));
+                              });
+                            }
+
+                            return _defaultPosition;
+                          }),
+                          initialData: _defaultPosition,
+                          builder: (context, snapshot) {
+                            return gm.GoogleMap(
+                              onMapCreated: (controller) async {
+                                _gmController.complete(controller);
+                                (await _gmController.future).setMapStyle(_mapStyle);
+                              },
+                              initialCameraPosition: _defaultPosition,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: true,
+                            );
                           },
-                          initialCameraPosition: _defaultPosition,
-                          myLocationEnabled: true,
-                          myLocationButtonEnabled: true,
                         ),
                       ),
-                      Positioned(
-                        right: 15,
-                        top: 15,
-                        child: Container(
-                          width: 22.w,
-                          decoration: boxDecoration,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextButton(
-                                        onPressed: () {
-                                          showDialog<String>(
-                                              context: context,
-                                              builder: (context) {
-                                                return Dialog(
-                                                  child: TextEditor(
-                                                    information: "Event Title",
-                                                    textController: _eventTitle,
-                                                  ),
-                                                );
-                                              }).then((value) => setState(() {}));
-                                        },
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            _eventTitle.text,
-                                            textAlign: TextAlign.start,
-                                            textDirection: TextDirection.ltr,
-                                            style: Theme.of(context).textTheme.titleLarge,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    IconButton(
-                                      icon: Icon(Icons.delete),
-                                      style: noBorderIconButtonStyle,
-                                      onPressed: () {},
-                                    ),
-                                  ],
-                                ),
-                                Divider(),
-                                const SizedBox(height: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Information",
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.location_pin),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: TextButton(
-                                            onPressed: () {
-                                              showDialog<String>(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    return Dialog(
-                                                      child: GooglePlacesTextField(
-                                                        textController: _eventAddress,
-                                                        placeId: _placeId,
-                                                      ),
-                                                    );
-                                                  }).then((value) async {
-                                                setState(() {});
-                                                // (await _gmController.future).animateCamera(cameraUpdate);
-                                              });
-                                            },
-                                            child: Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: Text(
-                                                _eventAddress.text,
-                                                textAlign: TextAlign.start,
-                                                textDirection: TextDirection.ltr,
-                                                style: Theme.of(context).textTheme.titleMedium,
-                                              ),
+                      if (currentEvent != null)
+                        Positioned(
+                          right: 15,
+                          top: 15,
+                          child: Container(
+                            width: 22.w,
+                            decoration: boxDecoration,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextButton(
+                                          onPressed: () {
+                                            showDialog<String>(
+                                                context: context,
+                                                builder: (context) {
+                                                  return Dialog(
+                                                    child: TextEditor(
+                                                      information: "New Event",
+                                                      textController: _eventTitle,
+                                                    ),
+                                                  );
+                                                }).then((value) => setState(() {}));
+                                          },
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              _eventTitle.text,
+                                              textAlign: TextAlign.start,
+                                              textDirection: TextDirection.ltr,
+                                              style: Theme.of(context).textTheme.titleLarge,
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.access_time),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                            child: OutlinedButton(
-                                          onPressed: () {},
-                                          child: Text("Day 1", style: Theme.of(context).textTheme.titleMedium),
-                                          style: eventWidgetButtonStyle,
-                                        )),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                            child: OutlinedButton(
+                                      ),
+                                      const SizedBox(width: 10),
+                                      if (currentEvent != null)
+                                        IconButton(
+                                          icon: Icon(Icons.delete),
+                                          style: noBorderIconButtonStyle,
                                           onPressed: () {
-                                            showTimePicker(context: context, initialTime: start).then((value) {
-                                              setState(() {
-                                                if (value != null) start = value;
-                                              });
+                                            var event = currentEvent;
+                                            deleteEvent(event!.key!);
+                                            setState(() {
+                                              currentEvent = null;
                                             });
                                           },
-                                          child: Text(Time(0, start.hour, start.minute).toTimeString(), style: Theme.of(context).textTheme.titleMedium),
-                                          style: eventWidgetButtonStyle,
-                                        )),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.arrow_right),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                            child: OutlinedButton(
-                                          onPressed: () {},
-                                          child: Text("Day 1", style: Theme.of(context).textTheme.titleMedium),
-                                          style: eventWidgetButtonStyle,
-                                        )),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                            child: OutlinedButton(
-                                          onPressed: () {
-                                            showTimePicker(context: context, initialTime: end).then((value) {
-                                              setState(() {
-                                                if (value != null) end = value;
+                                        ),
+                                    ],
+                                  ),
+                                  Divider(),
+                                  const SizedBox(height: 10),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Information",
+                                        style: Theme.of(context).textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.location_pin),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: TextButton(
+                                              onPressed: () {
+                                                showDialog<String>(
+                                                    context: context,
+                                                    builder: (context) {
+                                                      return Dialog(
+                                                        child: GooglePlacesTextField(
+                                                          textController: _eventAddress,
+                                                          placeId: _placeId,
+                                                        ),
+                                                      );
+                                                    }).then((value) async {
+                                                  setState(() {});
+                                                  // (await _gmController.future).animateCamera(cameraUpdate);
+                                                });
+                                              },
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                  _eventAddress.text,
+                                                  textAlign: TextAlign.start,
+                                                  textDirection: TextDirection.ltr,
+                                                  style: Theme.of(context).textTheme.titleMedium,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.access_time),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                              child: OutlinedButton(
+                                            onPressed: () {},
+                                            child: Text("Day 1", style: Theme.of(context).textTheme.titleMedium),
+                                            style: eventWidgetButtonStyle,
+                                          )),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                              child: OutlinedButton(
+                                            onPressed: () {
+                                              showTimePicker(context: context, initialTime: start).then((value) {
+                                                setState(() {
+                                                  if (value != null) start = value;
+                                                  end = TimeOfDay(hour: (start.hour + 1) % 24, minute: start.minute);
+                                                });
                                               });
-                                            });
-                                          },
-                                          child: Text(Time(0, end.hour, end.minute).toTimeString(), style: Theme.of(context).textTheme.titleMedium),
-                                          style: eventWidgetButtonStyle,
-                                        )),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Divider(),
-                                const SizedBox(height: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Description",
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    TextField(
-                                      controller: _eventDescription,
-                                      textAlignVertical: TextAlignVertical.top,
-                                      minLines: 1,
-                                      maxLines: 5,
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                    )
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-                                FilledButton(
-                                  onPressed: () async {
-                                    var placeId = await _placeId.future;
-                                    var event = EventModel(
-                                      tripKey: widget.tripKey,
-                                      eventName: _eventTitle.text,
-                                      startTime: Time(0, start.hour, start.minute),
-                                      endTime: Time(0, end.hour, end.minute),
-                                      description: _eventDescription.text,
-                                      placeId: placeId,
-                                    );
-                                    updateEvent(event);
-                                    setState(() {});
-                                  },
-                                  child: Text("Save"),
-                                ),
-                              ],
+                                            },
+                                            child: Text(Time(0, start.hour, start.minute).toTimeString(), style: Theme.of(context).textTheme.titleMedium),
+                                            style: eventWidgetButtonStyle,
+                                          )),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.arrow_right),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                              child: OutlinedButton(
+                                            onPressed: () {},
+                                            child: Text("Day 1", style: Theme.of(context).textTheme.titleMedium),
+                                            style: eventWidgetButtonStyle,
+                                          )),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                              child: OutlinedButton(
+                                            onPressed: () {
+                                              showTimePicker(context: context, initialTime: end).then((value) {
+                                                setState(() {
+                                                  if (value != null) end = value;
+                                                });
+                                              });
+                                            },
+                                            child: Text(Time(0, end.hour, end.minute).toTimeString(), style: Theme.of(context).textTheme.titleMedium),
+                                            style: eventWidgetButtonStyle,
+                                          )),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Divider(),
+                                  const SizedBox(height: 10),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Description",
+                                        style: Theme.of(context).textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      TextField(
+                                        controller: _eventDescription,
+                                        textAlignVertical: TextAlignVertical.top,
+                                        minLines: 1,
+                                        maxLines: 5,
+                                        style: Theme.of(context).textTheme.bodySmall,
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  FilledButton(
+                                    onPressed: () {
+                                      var event = EventModel(
+                                        tripKey: widget.tripKey,
+                                        eventName: _eventTitle.text,
+                                        address: _eventAddress.text,
+                                        startTime: Time(0, start.hour, start.minute),
+                                        endTime: Time(0, end.hour, end.minute),
+                                        description: _eventDescription.text,
+                                        placeId: _placeId.value,
+                                      );
+                                      updateEvent(event);
+                                      setState(() {});
+                                    },
+                                    child: Text("Save"),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -328,108 +481,6 @@ class _MainFrameState extends State<MainFrame> {
             ),
           );
         });
-  }
-}
-
-class EventViewer extends StatelessWidget {
-  EventViewer({super.key, required this.listOfEvents});
-
-  List<EventModel> listOfEvents;
-
-  @override
-  Widget build(BuildContext context) {
-    listOfEvents.sort((a, b) {
-      return a.startTime!.toMinutes().minutes - b.startTime!.toMinutes().minutes;
-    });
-
-    return ListView.separated(
-      itemBuilder: ((context, index) {
-        return EventItem(event: listOfEvents[index]);
-      }),
-      separatorBuilder: ((context, index) {
-        var prev = listOfEvents[index];
-        var next = listOfEvents[index + 1];
-
-        final directionService = gd.DirectionsService();
-        final request = gd.DirectionsRequest(
-          origin: "place_id:" + prev.placeId!,
-          destination: "place_id:" + next.placeId!,
-          travelMode: gd.TravelMode.driving,
-        );
-
-        Completer<gd.DirectionsResult> resultCompleter = Completer();
-        Completer<gd.DirectionsStatus> statusCompleter = Completer();
-        directionService.route(request, (result, status) {
-          resultCompleter.complete(result);
-          statusCompleter.complete(status);
-        });
-
-        return FutureBuilder(
-            future: resultCompleter.future,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                var result = snapshot.data;
-                var routes = result!.routes;
-                var bestRoute = routes!.first;
-                var bestLeg = bestRoute.legs!.first;
-                return TrafficItem(
-                    distance: bestLeg.distance!.value!.toDouble(), duration: Minutes(bestLeg.duration!.value!.toInt() ~/ 60), summary: bestRoute.summary!);
-              }
-
-              return Center(child: CircularProgressIndicator());
-            });
-      }),
-      itemCount: listOfEvents.length,
-    );
-  }
-}
-
-class EventItem extends StatelessWidget {
-  const EventItem({
-    super.key,
-    required this.event,
-  });
-
-  final EventModel event;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: () {},
-      style: eventWidgetButtonStyle,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.eventName!,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      event.startTime!.toTimeString(),
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      " - ",
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Text(
-                      event.endTime!.toTimeString(),
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -466,7 +517,7 @@ class TrafficItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 20),
                 Text(
-                  "$distance mi",
+                  "${distance.toStringAsFixed(2)} mi",
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],

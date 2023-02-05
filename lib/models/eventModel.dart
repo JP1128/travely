@@ -6,6 +6,7 @@ class EventModel extends DatabaseModel {
 
   String? tripKey;
   String? eventName;
+  String? address;
 
   Time? startTime;
   Time? endTime;
@@ -18,6 +19,7 @@ class EventModel extends DatabaseModel {
     this.key,
     this.tripKey,
     this.eventName,
+    this.address,
     this.startTime,
     this.endTime,
     this.description,
@@ -29,6 +31,7 @@ class EventModel extends DatabaseModel {
     return {
       "tripKey": tripKey,
       "eventName": eventName,
+      "address": address,
       "startTime": startTime?.toMinutes().minutes,
       "endTime": endTime?.toMinutes().minutes,
       "description": description,
@@ -44,6 +47,7 @@ class EventModel extends DatabaseModel {
       key: key,
       tripKey: map['tripKey'],
       eventName: map['eventName'],
+      address: map['address'],
       startTime: startTime,
       endTime: endTime,
       description: map['description'],
