@@ -352,8 +352,8 @@ class EventViewer extends StatelessWidget {
 
         final directionService = gd.DirectionsService();
         final request = gd.DirectionsRequest(
-          origin: prev.placeId,
-          destination: next.placeId,
+          origin: "place_id:" + prev.placeId!,
+          destination: "place_id:" + next.placeId!,
           travelMode: gd.TravelMode.driving,
         );
 
@@ -368,7 +368,12 @@ class EventViewer extends StatelessWidget {
             future: resultCompleter.future,
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                print(snapshot.data);
+                var result = snapshot.data;
+                var routes = result!.routes;
+                var bestRoute = routes!.first;
+                var bestLeg = bestRoute.legs!.first;
+                return TrafficItem(
+                    distance: bestLeg.distance!.value!.toDouble(), duration: Minutes(bestLeg.duration!.value!.toInt() ~/ 60), summary: bestRoute.summary!);
               }
 
               return Center(child: CircularProgressIndicator());
