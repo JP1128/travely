@@ -29,8 +29,8 @@ class EventModel extends DatabaseModel {
     return {
       "tripKey": tripKey,
       "eventName": eventName,
-      "startTime": startTime?.toMinutes(),
-      "endTime": endTime?.toMinutes(),
+      "startTime": startTime?.toMinutes().minutes,
+      "endTime": endTime?.toMinutes().minutes,
       "description": description,
       "placeId": placeId,
     };

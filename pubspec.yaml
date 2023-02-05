@@ -46,6 +46,11 @@ dependencies:
   firebase_database: ^10.0.9
   shared_preferences: ^2.0.17
   uuid: ^3.0.7
+  flutter_google_places: ^0.3.0
+
+  http:
+  flutter_google_places_sdk: ^0.3.2+6
+  google_directions_api: ^0.9.1
 
 dev_dependencies:
   flutter_test:

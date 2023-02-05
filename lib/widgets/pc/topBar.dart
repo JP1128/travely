@@ -24,7 +24,7 @@ class _TopBarState extends State<TopBar> {
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.more_vert),
-            style: const ButtonStyle(side: MaterialStatePropertyAll(BorderSide.none)),
+            style: noBorderIconButtonStyle,
           ),
           TextButton(
             child: Text(

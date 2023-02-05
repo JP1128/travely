@@ -1,6 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/src/foundation/key.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:travely/widgets/pc/mainFrame.dart';
 import 'package:travely/widgets/pc/topBar.dart';
@@ -39,7 +37,7 @@ class _MainPageState extends State<MainPage> {
               ],
             ),
             SizedBox(height: 30),
-            Expanded(child: MainFrame()),
+            Expanded(child: MainFrame(tripKey: "fa69cd2d-ee20-4e1c-a965-810da63bb0fc")),
           ],
         ),
       ),

@@ -49,6 +49,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '481675954776',
     projectId: 'travely-376605',
     authDomain: 'travely-376605.firebaseapp.com',
+    databaseURL: 'https://travely-376605-default-rtdb.firebaseio.com',
     storageBucket: 'travely-376605.appspot.com',
     measurementId: 'G-MM6F29B6E1',
   );
@@ -58,6 +59,7 @@ class DefaultFirebaseOptions {
     appId: '1:481675954776:android:14401e489c5bcc329d182d',
     messagingSenderId: '481675954776',
     projectId: 'travely-376605',
+    databaseURL: 'https://travely-376605-default-rtdb.firebaseio.com',
     storageBucket: 'travely-376605.appspot.com',
   );
 
@@ -66,6 +68,7 @@ class DefaultFirebaseOptions {
     appId: '1:481675954776:ios:0c39b19992837ab69d182d',
     messagingSenderId: '481675954776',
     projectId: 'travely-376605',
+    databaseURL: 'https://travely-376605-default-rtdb.firebaseio.com',
     storageBucket: 'travely-376605.appspot.com',
     iosBundleId: 'com.example.travely',
   );
@@ -75,6 +78,7 @@ class DefaultFirebaseOptions {
     appId: '1:481675954776:ios:0c39b19992837ab69d182d',
     messagingSenderId: '481675954776',
     projectId: 'travely-376605',
+    databaseURL: 'https://travely-376605-default-rtdb.firebaseio.com',
     storageBucket: 'travely-376605.appspot.com',
     iosBundleId: 'com.example.travely',
   );

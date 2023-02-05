@@ -14,20 +14,20 @@ void updateEvent(EventModel event) async {
   event.key ??= const Uuid().v4();
 
   var eventRef = eventsDatabase.child(event.key!);
+  print(event.toMap());
   await eventRef.set(event.toMap());
 }
 
-Stream<List<EventModel>?> streamEvents(String tripKey, int day) {
-  var events = eventsDatabase
-      .equalTo(tripKey, key: 'tripKey') //
-      .endAt(Minutes.fromDay(day), key: 'endTime')
-      .startAt(Minutes.fromDay(day), key: 'startTime');
+Stream<List<EventModel>?> streamEvents(String tripKey) {
+  var events = eventsDatabase.orderByChild("tripKey").equalTo(tripKey);
 
   var stream = events.onValue;
   return stream.map((event) {
     var snapshot = event.snapshot;
 
+    print(tripKey);
     if (snapshot.exists) {
+      print("wae");
       return snapshot.children.map((data) => EventModel.fromMap(data.key!, data.value!)).toList();
     }
 

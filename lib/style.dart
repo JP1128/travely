@@ -12,6 +12,7 @@ Decoration boxDecoration = BoxDecoration(
 );
 
 ButtonStyle eventWidgetButtonStyle = OutlinedButton.styleFrom(
+  minimumSize: Size.fromHeight(50),
   side: BorderSide(color: Color(strokeColor)),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(10),
@@ -22,6 +23,10 @@ ButtonStyle trafficWidgetButtonStyle = eventWidgetButtonStyle.merge(
   OutlinedButton.styleFrom(
     backgroundColor: Color(grayColor),
   ),
+);
+
+ButtonStyle noBorderIconButtonStyle = OutlinedButton.styleFrom(
+  side: BorderSide.none,
 );
 
 ThemeData theme = ThemeData(
